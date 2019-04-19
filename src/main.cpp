@@ -163,7 +163,7 @@ int main(int argc, char** argv)
     /* =================================== */
     cout << "[Router]" << endl << endl;
     Router router;
-    router.CreateLayout();
+    router.RUN();
     usg.report(1, 1);
     /* =================================== */
 
