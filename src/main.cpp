@@ -108,17 +108,18 @@ int main(int argc, char** argv)
     cout << "..global tile height: " << db.GetTileHeight() << endl; 
 
     cout << "..# of capacity adjustment: " << db.GetCapacityAdjustNo() << endl;
+/*
     for (int i = 0; i < db.GetCapacityAdjustNo(); i++) {
         CapacityAdjust& ca = db.GetCapacityAdjust(i);
         cout << "...." << ca.GetGx1() << " " << ca.GetGy1() << " " << ca.GetLayer1() 
         << " " << ca.GetGx2() << " " << ca.GetGy2() << " " << ca.GetLayer2() 
         << " " << ca.GetReduceCapacity() << endl;
     }
-
     cout << endl;
+*/
 
     cout << "..# of net: " << db.GetNetNo() << endl;
-
+/*
     for (int i = 0; i < db.GetNetNo(); i++) {
         Net& n = db.GetNetByPosition(i);
 
@@ -131,6 +132,7 @@ int main(int argc, char** argv)
         }
     }
     cout << endl;
+*/
     usg.report(1, 1);
     /* =================================== */
 

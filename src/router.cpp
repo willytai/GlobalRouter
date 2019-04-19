@@ -15,19 +15,6 @@ void Router::CreateLayout() {
     int   Hcap      = db.GetLayerHoriCapacity(HORIZONTAL);
     int   Vcap      = db.GetLayerVertiCapacity(VIRTICAL);
 
-    int numCellPerLayer = _width*_height;
-    _edges = new Edge***[numLayers];
-    for (int i = 0; i < numLayers; ++i) {
-        _edges[i] = new Edge**[numCellPerLayer];
-        for (int j = 0; j < numCellPerLayer; ++j) {
-            if (!j) _edges[i][j] = NULL;
-            else _edges[i][j] = new Edge*[j];
-            for (int k = 0; k < j; ++k) {
-                _edges[i][j][k] = NULL;
-            }
-        }
-    }
-
     _layout = new Cell***[numLayers];
     for (int i = 0; i < numLayers; ++i) {
         _layout[i] = new Cell**[_width];
@@ -35,39 +22,31 @@ void Router::CreateLayout() {
             _layout[i][j] = new Cell*[_height];
             for (int k = 0; k < _height; ++k) {
                 _layout[i][j][k] = new Cell;
-                int CellID = j*_width + k;
-                int C1     = CellID + 1;
-                int C2     = CellID + _width;
-                if (k < _width-1) { // x coordinate not exceeded in C1
-                    // cout << "layer " << i+1 << ", creating edge for " << C1 << ' ' << CellID << endl;
-                    if (i == HORIZONTAL) _edges[i][C1][CellID] = new Edge(Hcap);
-                    else                 _edges[i][C1][CellID] = new Edge(Vcap);
-                }
-                if (j < _height-1) { // y coordinate not exceeded in C2
-                    // cout << "layer " << i+1 << ", creating edge for " << C2 << ' ' << CellID << endl;
-                    if (i == VIRTICAL)   _edges[i][C2][CellID] = new Edge(Hcap);
-                    else                 _edges[i][C2][CellID] = new Edge(Vcap);
-                }
+                if (this->check_coordinate(j-1, k) && i == HORIZONTAL) this->create_edge(j, k, j-1, k, Hcap, i); 
+                if (this->check_coordinate(j, k-1) && i == VIRTICAL)   this->create_edge(j, k, j, k-1, Vcap, i); 
             }
         }
     }
 
     for (int i = 0; i < db.GetCapacityAdjustNo(); ++i) {
         CapacityAdjust& ca = db.GetCapacityAdjust(i);
-        int C1 = ca.GetGx1()*_width + ca.GetGy1();
-        int C2 = ca.GetGx2()*_width + ca.GetGy2();
-        if (C1 < C2) ::swap(C1, C2);
-        _edges[ca.GetLayer1()-1][C1][C2]->SetCapacity(ca.GetReduceCapacity());
+        int c1x = ca.GetGx1();
+        int c1y = ca.GetGy1();
+        int c2x = ca.GetGx2();
+        int c2y = ca.GetGy2();
+        short layer = ca.GetLayer1()-1;
+        Edge* e = _layout[layer][c1x][c1y]->get_edge(_layout[layer][c2x][c2y]);
+        assert(e && "Edge not found");
+        e->SetCapacity(ca.GetReduceCapacity());
+        // cout << "changing edge between " << '(' << c1x << ' ' << c1y << ") (" << c2x << ' ' << c2y << ") on layer " << layer << " to " << e->GetCapacity() << endl;;
     }
+}
 
-    for (int C1 = 1; C1 < numCellPerLayer; ++C1) {
-        for (int C2 = 0; C2 < C1; ++C2) {
-            if (!_edges[0][C1][C2]) continue;
-            int x1 = C1 / _width;
-            int y1 = C1 % _width;
-            int x2 = C2 / _width;
-            int y2 = C2 % _width;
-            cout << '(' << x1 << ',' << y1 << ") -> " << _edges[1][C1][C2]->_capacity << " -> (" << x2 << ',' << y2 << ')' << endl;
-        }
-    }
+void Router::create_edge(const int& c1x, const int& c1y, const int& c2x, const int& c2y, const int& cap, const int& layer) {
+    // cout << "creating edge between " << '(' << c1x << ' ' << c1y << ") (" << c2x << ' ' << c2y << ')' << " layer: " << layer+1 << endl;
+    Cell*& C1 = _layout[layer][c1x][c1y];
+    Cell*& C2 = _layout[layer][c2x][c2y];
+    Edge* e = new Edge(cap, C1, C2);
+    C1->add_edge(e);
+    C2->add_edge(e);
 }
