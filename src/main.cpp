@@ -2,6 +2,7 @@
 #include "routingdb.h"
 #include "tree.h"
 #include "router.h"
+#include "myUsage.h"
 #include <string>
 #include <cstdlib>
 
@@ -11,6 +12,7 @@ ifstream inputFile;
 ofstream outputFile;
 
 RoutingDB db;
+MyUsage usg;
 
 
 void ShowSyntax()
@@ -60,6 +62,7 @@ int main(int argc, char** argv)
 
 
     /* Parser */
+    usg.reset();
     cout << "[Parser]" << endl;
     Parser parser;
     parser.ReadISPD(inputFile);
@@ -128,17 +131,19 @@ int main(int argc, char** argv)
         }
     }
     cout << endl;
+    usg.report(1, 1);
     /* =================================== */
 
     cout << "[Tree Construction (Net Decomposition)]" << endl;
     RoutingTree tree;
     tree.MinimumSpanningTreeConstruction();
     tree.ShowInfo();
+    usg.report(1, 1);
     cout << endl;
 
     /* =================================== */
     /* Show net(subnet) information after net decomposition */
-
+    /*
     cout << "Net/SubNet Info: " << endl;
 
     for (int i = 0; i < db.GetNetNo(); i++) {
@@ -152,12 +157,12 @@ int main(int argc, char** argv)
         }
         cout << endl;
     }
-
+    */
     /* =================================== */
     cout << "[Router]" << endl << endl;
     Router router;
     router.CreateLayout();
-
+    usg.report(1, 1);
     /* =================================== */
 
     /*
