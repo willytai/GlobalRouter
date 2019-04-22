@@ -2,6 +2,7 @@
 #define __ROUTER_H__
 
 #include "routingdb.h"
+#include "minHeap.h"
 #include <vector>
 #include <map>
 #include <cassert>
@@ -29,6 +30,8 @@ struct Coordinate
     short GetY() const { return _y; }
     short GetZ() const { return _z; }
 
+    void print() const { cout << "(x: " << _x << ", y: " << _y << ", layer: " << _z << ")"; }
+
     bool operator == (const Coordinate& a) { return (a._x == _x && a._y == _y && a._z == _z); }
 
     short _x;
@@ -38,7 +41,7 @@ struct Coordinate
 
 struct Edge
 {
-    Edge(int c, Cell* c1, Cell* c2) { _capacity = c; _c1 = c1; _c2 = c2; }
+    Edge(int c, Cell* c1, Cell* c2) { this->SetCapacity(c); _c1 = c1; _c2 = c2; }
     ~Edge() {}
 
     void  SetCapacity(int c) { _capacity = c; _cost = 1.0/_capacity; }
@@ -61,7 +64,7 @@ struct Edge
 
 struct Cell
 {
-    Cell() { this->init_edge_ptr(); _parent = NULL; }
+    Cell() { this->init_edge_ptr(); _parent = NULL; _heap_id = -1; }
     ~Cell() {}
 
     /* for graph search */
@@ -71,12 +74,21 @@ struct Cell
     bool isGlobalRef() const { return _global_ref == _ref; }
     */
 
-    void SetParent(Cell* c) { _parent = c; }
-    void ResetParent() { _parent = NULL; }
+    void SetHeapID(int id) { _heap_id = id; }
+    void ResetHeapID() { _heap_id = -1; }
+    int  GetHeapID()   { return _heap_id; }
+    bool InHeap()      { return (_heap_id != -1); }
 
+    void  SetParent(Cell* c) { _parent = c; }
+    void  ResetParent() { _parent = NULL; }
+    Cell* GetParent() const { return _parent; }
+
+    void  SetCoordinate(short x, short y, short z) { _coor.SetCoordinate(x, y, z); }
     short GetX() const { return _coor.GetX(); }
     short GetY() const { return _coor.GetY(); }
     short GetZ() const { return _coor.GetZ(); }
+
+    void printCoordinates() const { _coor.print(); }
 
     /* edges */
     void init_edge_ptr() { for (int i = 0; i < 4; ++i) _edges[i] = NULL; }
@@ -102,6 +114,7 @@ struct Cell
     Cell*      _parent;
     // int        _ref;
     Coordinate _coor;
+    int        _heap_id;
 };
 
 struct cmp
@@ -123,8 +136,8 @@ public:
     void create_edge(const int&, const int&, const int&, const int&, const int&, const int&);
     void route_subnet(SubNet&);
     void dijkstra(Cell*, Cell*);
-    void relax(Cell*);
-    void relax(Cell*, Cell*);
+    void relax(Cell*, const float&, minHeap<float, Cell*>&);
+    void relax(Cell*, Cell*, const float&, minHeap<float, Cell*>&);
     bool check_coordinate(const int& x, const int& y) { return (x >= 0 && x < _width && y >= 0 && y < _height); }
     Cell* GetCellByCoordinate(const Coordinate&);
     Cell* GetUpperCell(const Cell*);

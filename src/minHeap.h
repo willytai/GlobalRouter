@@ -16,17 +16,26 @@ public:
 
     size_t size() const { return _data.size()-1; }
 
-    Data ExtractMin() const { return _data[1].second; }
+    Node ExtractMin() const { return _data[1]; }
+
+    bool DecreaseKey(int id, Key key) {
+        if (key > _data[id].first) return false;
+        _data[id].first = key;
+        this->fix_up(id);
+        return true;
+    }
 
     void pop() {
         if (!this->size()) return;
+        _data[1].second->ResetHeapID();
         _data[1] = _data.back();
         _data.pop_back();
         if (this->size()) this->fix_down(1);
     }
 
-    void insert(double key, Data d) {
+    void insert(Key key, Data d) {
         _data.push_back(Node(key, d));
+        d->SetHeapID(this->size());
         this->fix_up(this->size());
     }
 
@@ -43,6 +52,8 @@ public:
             target_id = right_id;
         else exit(0);
         if (_data[id].first > _data[target_id].first) {
+            _data[id].second->SetHeapID(target_id);
+            _data[target_id].second->SetHeapID(id);
             ::swap(_data[id], _data[target_id]);
             return fix_down(target_id);
         }
@@ -52,6 +63,8 @@ public:
         if (id < 1) return;
         int parent_id = id / 2;
         if (_data[parent_id].first > _data[id].first) {
+            _data[parent_id].second->SetHeapID(id);
+            _data[id].second->SetHeapID(parent_id);
             ::swap(_data[parent_id], _data[id]);
             return fix_up(parent_id);
         }
@@ -59,7 +72,9 @@ public:
 
     void print() const {
         for (int i = 1; i < _data.size(); ++i) {
-            cout << "(key: " << _data[i].first << ", data: "  << _data[i] << ") ";
+            cout << "(key: " << _data[i].first << ", data: ";
+            _data[i].second->printCoordinates();
+            cout << ", HeapID: " << _data[i].second->GetHeapID() << ")" << endl;
         }
         cout << endl;
     }

@@ -32,6 +32,7 @@ void Router::CreateLayout() {
             _layout[i][j] = new Cell*[_height];
             for (int k = 0; k < _height; ++k) {
                 _layout[i][j][k] = new Cell;
+                _layout[i][j][k]->SetCoordinate(j, k, i);
                 if (this->check_coordinate(j-1, k) && i == HORIZONTAL) this->create_edge(j, k, j-1, k, Hcap, i); 
                 if (this->check_coordinate(j, k-1) && i == VIRTICAL)   this->create_edge(j, k, j, k-1, Vcap, i); 
             }
@@ -65,7 +66,8 @@ void Router::route() {
     for (int i = 0; i < db.GetNetNo(); ++i) {
         Net& n = db.GetNetByPosition(i);
         cout << "\t> routing Net " << n.GetName() << endl;
-        for (int j = 0; j < n.GetSubNetNo(); ++j) {
+        // for (int j = 0; j < n.GetSubNetNo(); ++j) {
+        for (int j = n.GetSubNetNo()-1; j >= 0; --j) {
             this->route_subnet(n.GetSubNet(j));
         }
     }
@@ -80,6 +82,9 @@ void Router::route_subnet(SubNet& subnet) {
     short tz = subnet.GetTargetPinLayer();
     Coordinate goal(tx, ty, tz);
     Coordinate start(sx, sy, sz);
+    cout << endl;
+    cout << "[starting    point] "; start.print(); cout << endl;
+    cout << "[destination point] "; goal.print(); cout << endl;
     this->dijkstra(this->GetCellByCoordinate(start), this->GetCellByCoordinate(goal));
 }
 
@@ -93,33 +98,56 @@ void Router::dijkstra(Cell* start, Cell* goal) {
             }
         }
     }
+
+    // start relaxing
     int numCell = 2*_width*_height;
     for (int i = 0; i < numCell; ++i) {
-        Cell* curCell = minQ.ExtractMin();
+        pair<float, Cell*> curNode = minQ.ExtractMin();
         minQ.pop();
-        this->relax(curCell);
+        this->relax(curNode.second, curNode.first, minQ);
     }
+
+    // backtrack from goal
+    // TODO Decrease the capacities along the used edges!
+    cout << "[Destination to Source]" << endl;
+    int length = 0;
+    Cell* tmp = goal;
+    while (tmp != start) {
+        tmp->printCoordinates();
+
+        int curLayer = tmp->GetZ();
+        Cell* prev = tmp;
+        tmp = tmp->GetParent();
+        Edge* e = tmp->get_edge(prev);
+        float cost = e ? e->GetCost() : -1;
+        cout << " edge cost with parent: " << cost << endl;
+        int nextLayer = tmp->GetZ();
+        if (curLayer == nextLayer) ++length;
+        assert(tmp && "destination is not connected to source!");
+    }
+    tmp->printCoordinates(); cout << endl;
+    cout << "length: " << length << endl;
 }
 
-void Router::relax(Cell* c) {
+void Router::relax(Cell* c, const float& curCost, minHeap<float, Cell*>& heap) {
     if (c->GetZ() == HORIZONTAL) {
-        this->relax(c, this->GetAboveCell(c));
-        this->relax(c, this->GetLeftCell(c));
-        this->relax(c, this->GetRightCell(c));
+        this->relax(c, this->GetAboveCell(c), curCost, heap);
+        this->relax(c, this->GetLeftCell(c), curCost, heap);
+        this->relax(c, this->GetRightCell(c), curCost, heap);
     }
     if (c->GetZ() == VIRTICAL) {
-        this->relax(c, this->GetBelowCell(c));
-        this->relax(c, this->GetUpperCell(c));
-        this->relax(c, this->GetLowerCell(c));
+        this->relax(c, this->GetBelowCell(c), curCost, heap);
+        this->relax(c, this->GetUpperCell(c), curCost, heap);
+        this->relax(c, this->GetLowerCell(c), curCost, heap);
     }
 }
 
-void Router::relax(Cell* src, Cell* c) {
+void Router::relax(Cell* src, Cell* c, const float& curCost, minHeap<float, Cell*>& heap) {
     if (!c) return;
+    if (!c->InHeap()) return; // not inside min heap
     
     // find the edge
     Edge* e = src->get_edge(c);
-    c->SetParent(src);
 
     float EdgeCost;
     if (!e) { // via
@@ -131,7 +159,26 @@ void Router::relax(Cell* src, Cell* c) {
 
     // decrease key
     // store a heap_id in Cell to make this O(lgn)
-    // TODO
+    if (heap.DecreaseKey(c->GetHeapID(), EdgeCost+curCost)) {
+        c->SetParent(src);
+        /*
+        cout << "setting ";
+        c->printCoordinates();
+        cout << "'s parent to ";
+        src->printCoordinates();
+        cout << endl;
+        */
+    }
+    else {
+        /*
+        cout << "distance from ";
+        c->printCoordinates();
+        cout << "to ";
+        src->printCoordinates();
+        cout << " did not decrease.";
+        cout << endl;
+        */
+    }
 }
 
 Cell* Router::GetCellByCoordinate(const Coordinate& coor) {
