@@ -72,6 +72,8 @@ void Router::route() {
     }
 }
 
+int Cell::_global_net_ref = -1;
+
 void Router::route_subnet(SubNet& subnet) {
     short sx = subnet.GetSourcePinGx();
     short sy = subnet.GetSourcePinGy();
@@ -84,6 +86,7 @@ void Router::route_subnet(SubNet& subnet) {
     cout << endl;
     cout << "[starting    point] "; start.print(); cout << endl;
     cout << "[destination point] "; goal.print(); cout << endl;
+    Cell::SetGlobalNetRef(subnet.GetNetUid());
     this->dijkstra(this->GetCellByCoordinate(start), this->GetCellByCoordinate(goal));
 }
 
@@ -104,31 +107,14 @@ void Router::dijkstra(Cell* start, Cell* goal) {
     // for (int i = 0; i < numCell; ++i) {
     while (minQ.size()) {
         pair<float, Cell*> curNode = minQ.ExtractMin();
+        if (curNode.second == goal) break;
         minQ.pop();
         this->relax(curNode.second, curNode.first, minQ);
     }
 
     // backtrack from goal
     // TODO Decrease the capacities along the used edges!
-    cout << "[Destination to Source]" << endl;
-    // int length = 0;
-    Cell* tmp = goal;
-    while (tmp != start) {
-        // tmp->printCoordinates(); cout << endl;
-
-        // int curLayer = tmp->GetZ();
-        Cell* prev = tmp;
-        tmp = tmp->GetParent();
-        assert(tmp && "destination is not connected to source!");
-        Edge* e = tmp->get_edge(prev);
-        if (e) e->DecreaseCapacity();
-        // float cost = e ? e->GetCost() : -1;
-        // cout << " edge cost with parent: " << cost << endl;
-        // int nextLayer = tmp->GetZ();
-        // if (curLayer == nextLayer) ++length;
-    }
-    // tmp->printCoordinates(); cout << endl;
-    // cout << "length: " << length << endl;
+    this->backtrack(start, goal);
 }
 
 void Router::relax(Cell* c, const float& curCost, minHeap<float, Cell*>& heap) {
@@ -183,7 +169,46 @@ void Router::relax(Cell* src, Cell* c, const float& curCost, minHeap<float, Cell
     }
 }
 
-BBox Router::GetBoundingBox(Cell*& c1, Cell*& c2) {
+void Router::backtrack(Cell* start, Cell* goal) {
+    // cout << "[Destination to Source]" << endl;
+    int length = 0;
+    Cell* tmp = goal;
+    Cell* wire_start = start;
+    while (tmp != start) {
+        // tmp->printCoordinates(); cout << endl;
+        int curLayer = tmp->GetZ();
+
+        Cell* prev = tmp;
+        tmp = tmp->GetParent();
+        assert(tmp && "destination is not connected to source!");
+        Edge* e = tmp->get_edge(prev);
+        if (e) {
+            e->DecreaseCapacity();
+        }
+        else { // via
+            if (!wire_start) wire_start = tmp;
+            else {
+                Wire newWire(wire_start->GetCoordinate(), prev->GetCoordinate());
+                Wire newVia(prev->GetCoordinate(), tmp->GetCoordinate());
+
+                // need to check if these two wire s are legal
+                // remove repeated segments, check them by _global_net_ref
+                if (this->check_wire_and_correct(newWire)) _wires.push_back(newWire);
+                if (this->check_wire_and_correct(newVia))  _wires.push_back(newVia);
+            }
+        }
+
+        // float cost = e ? e->GetCost() : -1;
+        // cout << " edge cost with parent: " << cost << endl;
+        int nextLayer = tmp->GetZ();
+        if (curLayer == nextLayer) ++length;
+    }
+    // tmp->printCoordinates(); cout << endl;
+    cout << "length: " << length << endl;
+}
+
+inline BBox Router::GetBoundingBox(Cell*& c1, Cell*& c2) {
+    return BBox(Coordinate(0, 0, 0), Coordinate(_width-1, _height-1, 0));
     short lx = c1->GetX();
     short ux = c2->GetX();
     if (lx > ux) ::swap(lx, ux);
@@ -195,35 +220,41 @@ BBox Router::GetBoundingBox(Cell*& c1, Cell*& c2) {
     return BBox(Coordinate(lx, ly, 0), Coordinate(ux, uy, 0));
 }
 
-Cell* Router::GetCellByCoordinate(const Coordinate& coor) {
+bool Router::check_wire_and_correct(Wire& wire) {
+    // TODO
+    return false;
+}
+
+inline Cell* Router::GetCellByCoordinate(const Coordinate& coor) {
     return _layout[coor.GetZ()][coor.GetX()][coor.GetY()];
 }
 
-Cell* Router::GetUpperCell(const Cell* c) {
+inline Cell* Router::GetUpperCell(const Cell* c) {
     if (!this->check_coordinate(c->GetX(), c->GetY()+1)) return NULL;
     return _layout[c->GetZ()][c->GetX()][c->GetY()+1];
 }
-Cell* Router::GetLowerCell(const Cell* c) {
+
+inline Cell* Router::GetLowerCell(const Cell* c) {
     if (!this->check_coordinate(c->GetX(), c->GetY()-1)) return NULL;
     return _layout[c->GetZ()][c->GetX()][c->GetY()-1];
 }
 
-Cell* Router::GetRightCell(const Cell* c) {
+inline Cell* Router::GetRightCell(const Cell* c) {
     if (!this->check_coordinate(c->GetX()+1, c->GetY())) return NULL;
     return _layout[c->GetZ()][c->GetX()+1][c->GetY()];
 }
 
-Cell* Router::GetLeftCell (const Cell* c) {
+inline Cell* Router::GetLeftCell (const Cell* c) {
     if (!this->check_coordinate(c->GetX()-1, c->GetY())) return NULL;
     return _layout[c->GetZ()][c->GetX()-1][c->GetY()];
 }
 
-Cell* Router::GetAboveCell(const Cell* c) {
+inline Cell* Router::GetAboveCell(const Cell* c) {
     if (!this->check_coordinate(c->GetX(), c->GetY())) return NULL;
     return _layout[c->GetZ()+1][c->GetX()][c->GetY()];
 }
 
-Cell* Router::GetBelowCell(const Cell* c) {
+inline Cell* Router::GetBelowCell(const Cell* c) {
     if (!this->check_coordinate(c->GetX(), c->GetY())) return NULL;
     return _layout[c->GetZ()-1][c->GetX()][c->GetY()];
 }

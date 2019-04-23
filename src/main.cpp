@@ -45,6 +45,7 @@ void HandleArgument(const int argc, char** argv)
     arg_no++;
 
     /* output file */
+    /*
     outputFile.open(argv[arg_no], ios::out);
     if (!outputFile)
     {
@@ -53,6 +54,7 @@ void HandleArgument(const int argc, char** argv)
     }
 
     arg_no++;
+    */
 }
 
 
@@ -163,6 +165,7 @@ int main(int argc, char** argv)
     /* =================================== */
     cout << "[Router]" << endl << endl;
     Router router;
+    router.SetOutputFilename(argv[2]);
     router.RUN();
     usg.report(1, 1);
     /* =================================== */

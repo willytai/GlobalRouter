@@ -13,6 +13,7 @@ using namespace std;
 struct Cell;
 struct Edge;
 struct Coordinate;
+struct Wire;
 struct BBox;
 struct cmp;
 class Router;
@@ -38,6 +39,16 @@ struct Coordinate
     short _x;
     short _y;
     short _z;
+};
+
+struct Wire
+{
+    Wire() {}
+    Wire(Coordinate c1, Coordinate c2) { _start = c1, _end = c2; }
+    ~Wire() {}
+
+    Coordinate _start;
+    Coordinate _end;
 };
 
 struct BBox
@@ -85,15 +96,14 @@ struct Edge
 
 struct Cell
 {
-    Cell() { this->init_edge_ptr(); _parent = NULL; _heap_id = -1; }
+    Cell() { this->init_edge_ptr(); _parent = NULL; _heap_id = -1; _cur_net_ref = -1; }
     ~Cell() {}
 
-    /* for graph search */
-    /*
-    static void SetGlobalRef() { _global_ref++; }
-    void Set2GlobalRef() { _ref = _global_ref; }
-    bool isGlobalRef() const { return _global_ref == _ref; }
-    */
+    /* backtracking route */
+    /* to avoid marking route repeatively */
+    static void SetGlobalNetRef(int netid) { _global_net_ref = netid; }
+    void Set2GlobalNetRef() { _cur_net_ref = _global_net_ref; }
+    bool isGlobalNetRef() const { return _global_net_ref == _cur_net_ref; }
 
     void SetHeapID(int id) { _heap_id = id; }
     void ResetHeapID() { _heap_id = -1; }
@@ -105,16 +115,16 @@ struct Cell
     Cell* GetParent() const { return _parent; }
 
     void  SetCoordinate(short x, short y, short z) { _coor.SetCoordinate(x, y, z); }
+    Coordinate GetCoordinate() const { return _coor; }
     short GetX() const { return _coor.GetX(); }
     short GetY() const { return _coor.GetY(); }
     short GetZ() const { return _coor.GetZ(); }
 
     void printCoordinates() const { _coor.print(); }
 
-    /* edges */
-    void init_edge_ptr() { for (int i = 0; i < 4; ++i) _edges[i] = NULL; }
+    void init_edge_ptr() { for (int i = 0; i < 3; ++i) _edges[i] = NULL; }
     void add_edge(Edge* e) {
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 3; ++i) {
             if (!_edges[i]) {
                 _edges[i] = e;
                 return;
@@ -123,19 +133,19 @@ struct Cell
         assert(0 && "Number of edges in a single cell exceeded!");
     }
     Edge* get_edge(const Cell* c2) const {
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 3; ++i) {
             if (!_edges[i]) break;
             if (_edges[i]->matched(this, c2)) return _edges[i];
         }
         return NULL;
     }
 
-    // static int _global_ref;
+    static int _global_net_ref;
     Edge*      _edges[3];
     Cell*      _parent;
-    // int        _ref;
-    Coordinate _coor;
     int        _heap_id;
+    int        _cur_net_ref;
+    Coordinate _coor;
 };
 
 struct cmp
@@ -150,6 +160,7 @@ public:
     Router() {}
     ~Router() {}
 
+    void SetOutputFilename(string out) { _outfile = ofstream(out); }
     void RUN();
     void CreateLayout();
     void route();
@@ -159,25 +170,31 @@ public:
     void dijkstra(Cell*, Cell*);
     void relax(Cell*, const float&, minHeap<float, Cell*>&);
     void relax(Cell*, Cell*, const float&, minHeap<float, Cell*>&);
-    bool check_coordinate(const int& x, const int& y) { return (x >= 0 && x < _width && y >= 0 && y < _height); }
+    void backtrack(Cell*, Cell*);
+    bool check_wire_and_correct(Wire&);
+    inline bool check_coordinate(const int& x, const int& y) { return (x >= 0 && x < _width && y >= 0 && y < _height); }
 
-    BBox GetBoundingBox(Cell*&, Cell*&);
+    inline BBox GetBoundingBox(Cell*&, Cell*&);
 
-    Cell* GetCellByCoordinate(const Coordinate&);
-    Cell* GetUpperCell(const Cell*);
-    Cell* GetLowerCell(const Cell*);
-    Cell* GetRightCell(const Cell*);
-    Cell* GetLeftCell (const Cell*);
-    Cell* GetAboveCell(const Cell*);
-    Cell* GetBelowCell(const Cell*);
+    inline Cell* GetCellByCoordinate(const Coordinate&);
+    inline Cell* GetUpperCell(const Cell*);
+    inline Cell* GetLowerCell(const Cell*);
+    inline Cell* GetRightCell(const Cell*);
+    inline Cell* GetLeftCell (const Cell*);
+    inline Cell* GetAboveCell(const Cell*);
+    inline Cell* GetBelowCell(const Cell*);
 
 private:
 
     // _layout[layer][x][y]
     Cell**** _layout; 
 
-    short _width;  // horizontal
-    short _height; // virtical
+    short    _width;  // horizontal
+    short    _height; // virtical
+
+    ofstream _outfile;
+
+    vector<Wire> _wires;
 };
 
 #endif /* __ROUTER_H__ */
