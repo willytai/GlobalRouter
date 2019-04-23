@@ -13,6 +13,7 @@ using namespace std;
 struct Cell;
 struct Edge;
 struct Coordinate;
+struct BBox;
 struct cmp;
 class Router;
 
@@ -39,13 +40,33 @@ struct Coordinate
     short _z;
 };
 
+struct BBox
+{
+    BBox(Coordinate ll, Coordinate ur) { _ll = ll; _ur = ur; }
+    ~BBox() {}
+
+    Coordinate GetLowerLeft()  const { return _ll; }
+    Coordinate GetUpperRight() const { return _ur; }
+
+    short GetLowerLeftX() const { return _ll.GetX(); }
+    short GetLowerLeftY() const { return _ll.GetY(); }
+
+    short GetUpperRightX() const { return _ur.GetX(); }
+    short GetUpperRightY() const { return _ur.GetY(); }
+
+    int GetSize() const { return (_ur.GetX() - _ll.GetX()) * (_ur.GetY() - _ll.GetY()); }
+
+    Coordinate _ll;
+    Coordinate _ur;
+};
+
 struct Edge
 {
     Edge(int c, Cell* c1, Cell* c2) { this->SetCapacity(c); _c1 = c1; _c2 = c2; }
     ~Edge() {}
 
     void  SetCapacity(int c) { _capacity = c; _cost = 1.0/_capacity; }
-    void  DecreaseCapacity() { --_capacity; _cost = 1.0/_capacity; }
+    void  DecreaseCapacity() { if (_capacity > 1) --_capacity; else _capacity /= 2; _cost = 1.0/_capacity; }
     int   GetCapacity() const { return _capacity; }
     float GetCost() const { return _cost; }
 
@@ -110,7 +131,7 @@ struct Cell
     }
 
     // static int _global_ref;
-    Edge*      _edges[4];
+    Edge*      _edges[3];
     Cell*      _parent;
     // int        _ref;
     Coordinate _coor;
@@ -139,6 +160,9 @@ public:
     void relax(Cell*, const float&, minHeap<float, Cell*>&);
     void relax(Cell*, Cell*, const float&, minHeap<float, Cell*>&);
     bool check_coordinate(const int& x, const int& y) { return (x >= 0 && x < _width && y >= 0 && y < _height); }
+
+    BBox GetBoundingBox(Cell*&, Cell*&);
+
     Cell* GetCellByCoordinate(const Coordinate&);
     Cell* GetUpperCell(const Cell*);
     Cell* GetLowerCell(const Cell*);

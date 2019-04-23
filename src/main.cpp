@@ -145,7 +145,7 @@ int main(int argc, char** argv)
 
     /* =================================== */
     /* Show net(subnet) information after net decomposition */
-    // /*
+    /*
     cout << "Net/SubNet Info: " << endl;
 
     for (int i = 0; i < db.GetNetNo(); i++) {
@@ -159,7 +159,7 @@ int main(int argc, char** argv)
         }
         cout << endl;
     }
-    // */
+    */
     /* =================================== */
     cout << "[Router]" << endl << endl;
     Router router;

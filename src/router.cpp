@@ -65,9 +65,8 @@ void Router::create_edge(const int& c1x, const int& c1y, const int& c2x, const i
 void Router::route() {
     for (int i = 0; i < db.GetNetNo(); ++i) {
         Net& n = db.GetNetByPosition(i);
-        cout << "\t> routing Net " << n.GetName() << endl;
-        // for (int j = 0; j < n.GetSubNetNo(); ++j) {
-        for (int j = n.GetSubNetNo()-1; j >= 0; --j) {
+        cout << "\t> routing Net " << n.GetName() << ' ' << i+1 << '/' << db.GetNetNo() << endl;
+        for (int j = 0; j < n.GetSubNetNo(); ++j) {
             this->route_subnet(n.GetSubNet(j));
         }
     }
@@ -89,19 +88,21 @@ void Router::route_subnet(SubNet& subnet) {
 }
 
 void Router::dijkstra(Cell* start, Cell* goal) {
+    BBox box = this->GetBoundingBox(start, goal);
     minHeap<float, Cell*> minQ;
     minQ.insert(0, start);
     for (int layer = 0; layer < 2; ++layer) {
-        for (int x = 0; x < _width; ++x) {
-            for (int y = 0; y < _height; ++y) {
+        for (int x = box.GetLowerLeftX(); x <= box.GetUpperRightX(); ++x) {
+            for (int y = box.GetLowerLeftY(); y <= box.GetUpperRightY(); ++y) {
                 if (_layout[layer][x][y] != start) minQ.insert(numeric_limits<float>::max(), _layout[layer][x][y]);
             }
         }
     }
 
     // start relaxing
-    int numCell = 2*_width*_height;
-    for (int i = 0; i < numCell; ++i) {
+    // int numCell = 2*box.GetSize();
+    // for (int i = 0; i < numCell; ++i) {
+    while (minQ.size()) {
         pair<float, Cell*> curNode = minQ.ExtractMin();
         minQ.pop();
         this->relax(curNode.second, curNode.first, minQ);
@@ -110,29 +111,30 @@ void Router::dijkstra(Cell* start, Cell* goal) {
     // backtrack from goal
     // TODO Decrease the capacities along the used edges!
     cout << "[Destination to Source]" << endl;
-    int length = 0;
+    // int length = 0;
     Cell* tmp = goal;
     while (tmp != start) {
-        tmp->printCoordinates();
+        // tmp->printCoordinates(); cout << endl;
 
-        int curLayer = tmp->GetZ();
+        // int curLayer = tmp->GetZ();
         Cell* prev = tmp;
         tmp = tmp->GetParent();
-        Edge* e = tmp->get_edge(prev);
-        float cost = e ? e->GetCost() : -1;
-        cout << " edge cost with parent: " << cost << endl;
-        int nextLayer = tmp->GetZ();
-        if (curLayer == nextLayer) ++length;
         assert(tmp && "destination is not connected to source!");
+        Edge* e = tmp->get_edge(prev);
+        if (e) e->DecreaseCapacity();
+        // float cost = e ? e->GetCost() : -1;
+        // cout << " edge cost with parent: " << cost << endl;
+        // int nextLayer = tmp->GetZ();
+        // if (curLayer == nextLayer) ++length;
     }
-    tmp->printCoordinates(); cout << endl;
-    cout << "length: " << length << endl;
+    // tmp->printCoordinates(); cout << endl;
+    // cout << "length: " << length << endl;
 }
 
 void Router::relax(Cell* c, const float& curCost, minHeap<float, Cell*>& heap) {
     if (c->GetZ() == HORIZONTAL) {
         this->relax(c, this->GetAboveCell(c), curCost, heap);
-        this->relax(c, this->GetLeftCell(c), curCost, heap);
+        this->relax(c, this->GetLeftCell (c), curCost, heap);
         this->relax(c, this->GetRightCell(c), curCost, heap);
     }
     if (c->GetZ() == VIRTICAL) {
@@ -179,6 +181,18 @@ void Router::relax(Cell* src, Cell* c, const float& curCost, minHeap<float, Cell
         cout << endl;
         */
     }
+}
+
+BBox Router::GetBoundingBox(Cell*& c1, Cell*& c2) {
+    short lx = c1->GetX();
+    short ux = c2->GetX();
+    if (lx > ux) ::swap(lx, ux);
+
+    short ly = c1->GetY();
+    short uy = c2->GetY();
+    if (ly > uy) ::swap(ly, uy);
+
+    return BBox(Coordinate(lx, ly, 0), Coordinate(ux, uy, 0));
 }
 
 Cell* Router::GetCellByCoordinate(const Coordinate& coor) {
