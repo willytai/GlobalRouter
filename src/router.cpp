@@ -90,92 +90,19 @@ void Router::route_subnet(SubNet& subnet) {
     this->dijkstra(this->GetCellByCoordinate(start), this->GetCellByCoordinate(goal));
 }
 
-void Router::dijkstra(Cell* start, Cell* goal) {
-    BBox box = this->GetBoundingBox(start, goal);
-    minHeap<float, Cell*> minQ;
-    minQ.insert(0, start);
-    for (int layer = 0; layer < 2; ++layer) {
-        for (int x = box.GetLowerLeftX(); x <= box.GetUpperRightX(); ++x) {
-            for (int y = box.GetLowerLeftY(); y <= box.GetUpperRightY(); ++y) {
-                if (_layout[layer][x][y] != start) minQ.insert(numeric_limits<float>::max(), _layout[layer][x][y]);
-            }
-        }
-    }
-
-    // start relaxing
-    // int numCell = 2*box.GetSize();
-    // for (int i = 0; i < numCell; ++i) {
-    while (minQ.size()) {
-        pair<float, Cell*> curNode = minQ.ExtractMin();
-        if (curNode.second == goal) break;
-        minQ.pop();
-        this->relax(curNode.second, curNode.first, minQ);
-    }
-
-    // backtrack from goal
-    // TODO Decrease the capacities along the used edges!
-    this->backtrack(start, goal);
-}
-
-void Router::relax(Cell* c, const float& curCost, minHeap<float, Cell*>& heap) {
-    if (c->GetZ() == HORIZONTAL) {
-        this->relax(c, this->GetAboveCell(c), curCost, heap);
-        this->relax(c, this->GetLeftCell (c), curCost, heap);
-        this->relax(c, this->GetRightCell(c), curCost, heap);
-    }
-    if (c->GetZ() == VIRTICAL) {
-        this->relax(c, this->GetBelowCell(c), curCost, heap);
-        this->relax(c, this->GetUpperCell(c), curCost, heap);
-        this->relax(c, this->GetLowerCell(c), curCost, heap);
-    }
-}
-
-void Router::relax(Cell* src, Cell* c, const float& curCost, minHeap<float, Cell*>& heap) {
-    if (!c) return;
-    if (!c->InHeap()) return; // not inside min heap
-    
-    // find the edge
-    Edge* e = src->get_edge(c);
-
-    float EdgeCost;
-    if (!e) { // via
-        EdgeCost = 0;
-    }
-    else {
-        EdgeCost = e->GetCost();
-    }
-
-    // decrease key
-    // store a heap_id in Cell to make this O(lgn)
-    if (heap.DecreaseKey(c->GetHeapID(), EdgeCost+curCost)) {
-        c->SetParent(src);
-        /*
-        cout << "setting ";
-        c->printCoordinates();
-        cout << "'s parent to ";
-        src->printCoordinates();
-        cout << endl;
-        */
-    }
-    else {
-        /*
-        cout << "distance from ";
-        c->printCoordinates();
-        cout << "to ";
-        src->printCoordinates();
-        cout << " did not decrease.";
-        cout << endl;
-        */
-    }
-}
-
 void Router::backtrack(Cell* start, Cell* goal) {
-    // cout << "[Destination to Source]" << endl;
+    cout << "[Backtracking] ";
     int length = 0;
     Cell* tmp = goal;
     Cell* wire_start = start;
     while (tmp != start) {
-        // tmp->printCoordinates(); cout << endl;
+        /*
+        start->printCoordinates();
+        cout << ' ';
+        goal->printCoordinates();
+        cout << ' ';
+        tmp->printCoordinates(); cout << endl;
+        */
         int curLayer = tmp->GetZ();
 
         Cell* prev = tmp;
@@ -207,8 +134,8 @@ void Router::backtrack(Cell* start, Cell* goal) {
     cout << "length: " << length << endl;
 }
 
-inline BBox Router::GetBoundingBox(Cell*& c1, Cell*& c2) {
-    return BBox(Coordinate(0, 0, 0), Coordinate(_width-1, _height-1, 0));
+BBox Router::GetBoundingBox(Cell*& c1, Cell*& c2) {
+    // return BBox(Coordinate(0, 0, 0), Coordinate(_width-1, _height-1, 0));
     short lx = c1->GetX();
     short ux = c2->GetX();
     if (lx > ux) ::swap(lx, ux);
@@ -223,38 +150,4 @@ inline BBox Router::GetBoundingBox(Cell*& c1, Cell*& c2) {
 bool Router::check_wire_and_correct(Wire& wire) {
     // TODO
     return false;
-}
-
-inline Cell* Router::GetCellByCoordinate(const Coordinate& coor) {
-    return _layout[coor.GetZ()][coor.GetX()][coor.GetY()];
-}
-
-inline Cell* Router::GetUpperCell(const Cell* c) {
-    if (!this->check_coordinate(c->GetX(), c->GetY()+1)) return NULL;
-    return _layout[c->GetZ()][c->GetX()][c->GetY()+1];
-}
-
-inline Cell* Router::GetLowerCell(const Cell* c) {
-    if (!this->check_coordinate(c->GetX(), c->GetY()-1)) return NULL;
-    return _layout[c->GetZ()][c->GetX()][c->GetY()-1];
-}
-
-inline Cell* Router::GetRightCell(const Cell* c) {
-    if (!this->check_coordinate(c->GetX()+1, c->GetY())) return NULL;
-    return _layout[c->GetZ()][c->GetX()+1][c->GetY()];
-}
-
-inline Cell* Router::GetLeftCell (const Cell* c) {
-    if (!this->check_coordinate(c->GetX()-1, c->GetY())) return NULL;
-    return _layout[c->GetZ()][c->GetX()-1][c->GetY()];
-}
-
-inline Cell* Router::GetAboveCell(const Cell* c) {
-    if (!this->check_coordinate(c->GetX(), c->GetY())) return NULL;
-    return _layout[c->GetZ()+1][c->GetX()][c->GetY()];
-}
-
-inline Cell* Router::GetBelowCell(const Cell* c) {
-    if (!this->check_coordinate(c->GetX(), c->GetY())) return NULL;
-    return _layout[c->GetZ()-1][c->GetX()][c->GetY()];
 }

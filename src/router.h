@@ -32,6 +32,10 @@ struct Coordinate
     short GetY() const { return _y; }
     short GetZ() const { return _z; }
 
+    void SetX(short x) { _x = x; }
+    void SetY(short y) { _y = y; }
+    void SetZ(short z) { _z = z; }
+
     void print() const { cout << "(x: " << _x << ", y: " << _y << ", layer: " << _z << ")"; }
 
     bool operator == (const Coordinate& a) { return (a._x == _x && a._y == _y && a._z == _z); }
@@ -46,6 +50,21 @@ struct Wire
     Wire() {}
     Wire(Coordinate c1, Coordinate c2) { _start = c1, _end = c2; }
     ~Wire() {}
+
+    Coordinate GetStart() const { return _start; }
+    Coordinate GetEnd()   const { return _end; }
+
+    void SetStart(short x, short y, short z) {
+        _start.SetX(x);
+        _start.SetY(y);
+        _start.SetZ(z);
+    }
+
+    void SetEnd(short x, short y, short z) {
+        _end.SetX(x);
+        _end.SetY(y);
+        _end.SetZ(z);
+    }
 
     Coordinate _start;
     Coordinate _end;
@@ -168,21 +187,51 @@ public:
     void create_edge(const int&, const int&, const int&, const int&, const int&, const int&);
     void route_subnet(SubNet&);
     void dijkstra(Cell*, Cell*);
-    void relax(Cell*, const float&, minHeap<float, Cell*>&);
+    void relax(Cell*, const float&, minHeap<float, Cell*>&, const BBox&);
     void relax(Cell*, Cell*, const float&, minHeap<float, Cell*>&);
     void backtrack(Cell*, Cell*);
     bool check_wire_and_correct(Wire&);
     inline bool check_coordinate(const int& x, const int& y) { return (x >= 0 && x < _width && y >= 0 && y < _height); }
+    inline bool check_coordinate(const int& x, const int& y, const BBox& box) {
+        return (x >= box.GetLowerLeftX() && x <= box.GetUpperRightX() && 
+                y >= box.GetLowerLeftY() && y <= box.GetUpperRightY());
+    }
 
-    inline BBox GetBoundingBox(Cell*&, Cell*&);
+    BBox GetBoundingBox(Cell*&, Cell*&);
 
-    inline Cell* GetCellByCoordinate(const Coordinate&);
-    inline Cell* GetUpperCell(const Cell*);
-    inline Cell* GetLowerCell(const Cell*);
-    inline Cell* GetRightCell(const Cell*);
-    inline Cell* GetLeftCell (const Cell*);
-    inline Cell* GetAboveCell(const Cell*);
-    inline Cell* GetBelowCell(const Cell*);
+    inline Cell* GetCellByCoordinate(const Coordinate& coor) {
+        return _layout[coor.GetZ()][coor.GetX()][coor.GetY()];
+    }
+
+    inline Cell* GetUpperCell(const Cell* c, const BBox& box) {
+        if (!this->check_coordinate(c->GetX(), c->GetY()+1, box)) return NULL;
+        return _layout[c->GetZ()][c->GetX()][c->GetY()+1];
+    }
+
+    inline Cell* GetLowerCell(const Cell* c, const BBox& box) {
+        if (!this->check_coordinate(c->GetX(), c->GetY()-1, box)) return NULL;
+        return _layout[c->GetZ()][c->GetX()][c->GetY()-1];
+    }
+
+    inline Cell* GetRightCell(const Cell* c, const BBox& box) {
+        if (!this->check_coordinate(c->GetX()+1, c->GetY(), box)) return NULL;
+        return _layout[c->GetZ()][c->GetX()+1][c->GetY()];
+    }
+
+    inline Cell* GetLeftCell (const Cell* c, const BBox& box) {
+        if (!this->check_coordinate(c->GetX()-1, c->GetY(), box)) return NULL;
+        return _layout[c->GetZ()][c->GetX()-1][c->GetY()];
+    }
+
+    inline Cell* GetAboveCell(const Cell* c, const BBox& box) {
+        if (!this->check_coordinate(c->GetX(), c->GetY(), box)) return NULL;
+        return _layout[c->GetZ()+1][c->GetX()][c->GetY()];
+    }
+
+    inline Cell* GetBelowCell(const Cell* c, const BBox& box) {
+        if (!this->check_coordinate(c->GetX(), c->GetY(), box)) return NULL;
+        return _layout[c->GetZ()-1][c->GetX()][c->GetY()];
+    }
 
 private:
 

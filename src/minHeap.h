@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <iostream>
+#include <cassert>
 
 using namespace std;
 
@@ -19,6 +20,7 @@ public:
     Node ExtractMin() const { return _data[1]; }
 
     bool DecreaseKey(int id, Key key) {
+        assert(_data[id].second->GetHeapID() == id);
         if (key > _data[id].first) return false;
         _data[id].first = key;
         this->fix_up(id);
@@ -29,6 +31,7 @@ public:
         if (!this->size()) return;
         _data[1].second->ResetHeapID();
         _data[1] = _data.back();
+        _data[1].second->SetHeapID(1);
         _data.pop_back();
         if (this->size()) this->fix_down(1);
     }
@@ -82,11 +85,11 @@ public:
     class iterator
     {
     public:
-        iterator(typename std::vector<Data>::iterator t) { _it = t; }
+        iterator(typename std::vector<Node>::iterator t) { _it = t; }
         iterator(const iterator& i) { _it = i._it; }
         ~iterator() {};
 
-        const Data& operator * () const { return *_it; }
+        const Node& operator * () const { return *_it; }
         iterator& operator ++ () {  ++_it; return *this; }
         iterator& operator ++ (int) { iterator ret = *this; _it++; return ret; }
         iterator& operator -- () {  --_it; return *this; }
@@ -95,7 +98,7 @@ public:
         bool operator == (const iterator& i) const { return _it == i._it; }
         iterator& operator = (const iterator& i) { _it = i._it; }
     private:
-        typename std::vector<Data>::iterator _it;
+        typename std::vector<Node>::iterator _it;
     };
 
     iterator begin() { return ++(_data.begin()); }
