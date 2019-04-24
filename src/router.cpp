@@ -5,9 +5,6 @@
 #include <cstdlib>
 #include <limits>
 
-#define HORIZONTAL 0
-#define VIRTICAL   1
-
 extern RoutingDB db;
 
 void Router::RUN() {
@@ -65,10 +62,19 @@ void Router::create_edge(const int& c1x, const int& c1y, const int& c2x, const i
 void Router::route() {
     for (int i = 0; i < db.GetNetNo(); ++i) {
         Net& n = db.GetNetByPosition(i);
-        cout << "\t> routing Net " << n.GetName() << ' ' << i+1 << '/' << db.GetNetNo() << endl;
+        cout << "\t> routing Net " << n.GetName() << ' ' << i+1 << '/' << db.GetNetNo() << endl << endl;
+        Cell::SetGlobalNetRef(n.GetUid());
+        _wires.clear();
         for (int j = 0; j < n.GetSubNetNo(); ++j) {
             this->route_subnet(n.GetSubNet(j));
         }
+        this->collect_wires();
+
+        // dump to file
+        _outfile << n.GetName() << ' ' << n.GetUid() << ' ' <<  _wires.size() << endl;
+        for (auto it = _wires.begin(); it != _wires.end(); ++it)
+            _outfile << *it << endl;
+        _outfile << '!' << endl;
     }
 }
 
@@ -77,24 +83,70 @@ int Cell::_global_net_ref = -1;
 void Router::route_subnet(SubNet& subnet) {
     short sx = subnet.GetSourcePinGx();
     short sy = subnet.GetSourcePinGy();
-    short sz = subnet.GetSourcePinLayer();
+    short sz = subnet.GetSourcePinLayer()-1;
     short tx = subnet.GetTargetPinGx();
     short ty = subnet.GetTargetPinGy();
-    short tz = subnet.GetTargetPinLayer();
+    short tz = subnet.GetTargetPinLayer()-1;
     Coordinate goal(tx, ty, tz);
     Coordinate start(sx, sy, sz);
-    cout << endl;
     cout << "[starting    point] "; start.print(); cout << endl;
     cout << "[destination point] "; goal.print(); cout << endl;
-    Cell::SetGlobalNetRef(subnet.GetNetUid());
     this->dijkstra(this->GetCellByCoordinate(start), this->GetCellByCoordinate(goal));
 }
 
+void Router::collect_wires() {
+
+    // HORIZONTAL layer
+    for (int y = 0; y < _height; ++y) {
+        Cell* start = NULL;
+        Cell* end   = NULL;
+        for (int x = 0; x < _width; ++x) {
+            if (_layout[HORIZONTAL][x][y]->isGlobalNetRef() && !start) {
+                start = _layout[HORIZONTAL][x][y];
+                continue;
+            }
+            if (!(_layout[HORIZONTAL][x][y]->isGlobalNetRef()) && start) {
+                end = _layout[HORIZONTAL][x-1][y];
+            }
+            else if (start && x == _width-1) {
+                end = _layout[HORIZONTAL][x][y];
+            }
+            else continue;
+            if (start != end) {
+                _wires.push_back(Wire(start->GetCoordinate(), end->GetCoordinate()));
+            }
+            start = end = NULL;
+        }
+    }
+
+    // VIRTICAL layer
+    for (int x = 0; x < _width; ++x) {
+        Cell* start = NULL;
+        Cell* end   = NULL;
+        for (int y = 0; y < _height; ++y) {
+            if (_layout[VIRTICAL][x][y]->isGlobalNetRef() && !start) {
+                start = _layout[VIRTICAL][x][y];
+                continue;
+            }
+            if (!(_layout[VIRTICAL][x][y]->isGlobalNetRef()) && start) {
+                end = _layout[VIRTICAL][x][y-1];
+            }
+            else if (start && y == _height-1) {
+                end = _layout[VIRTICAL][x][y];
+            }
+            else continue;
+            if (start != end) {
+                _wires.push_back(Wire(start->GetCoordinate(), end->GetCoordinate()));
+            }
+            start = end = NULL;
+        }
+    }
+}
+
 void Router::backtrack(Cell* start, Cell* goal) {
-    cout << "[Backtracking] ";
-    int length = 0;
+    cout << "[Backtracking]" << endl << endl;
+    // int length = 0;
     Cell* tmp = goal;
-    Cell* wire_start = start;
     while (tmp != start) {
         /*
         start->printCoordinates();
@@ -103,7 +155,7 @@ void Router::backtrack(Cell* start, Cell* goal) {
         cout << ' ';
         tmp->printCoordinates(); cout << endl;
         */
-        int curLayer = tmp->GetZ();
+        // int curLayer = tmp->GetZ();
 
         Cell* prev = tmp;
         tmp = tmp->GetParent();
@@ -112,26 +164,21 @@ void Router::backtrack(Cell* start, Cell* goal) {
         if (e) {
             e->DecreaseCapacity();
         }
-        else { // via
-            if (!wire_start) wire_start = tmp;
-            else {
-                Wire newWire(wire_start->GetCoordinate(), prev->GetCoordinate());
-                Wire newVia(prev->GetCoordinate(), tmp->GetCoordinate());
-
-                // need to check if these two wire s are legal
-                // remove repeated segments, check them by _global_net_ref
-                if (this->check_wire_and_correct(newWire)) _wires.push_back(newWire);
-                if (this->check_wire_and_correct(newVia))  _wires.push_back(newVia);
-            }
+        else { // via, colllect them here
+            if (tmp->isGlobalNetRef() && prev->isGlobalNetRef()) {}
+            else _wires.push_back(Wire(tmp->GetCoordinate(), prev->GetCoordinate()));
         }
+
+        prev->Set2GlobalNetRef();
 
         // float cost = e ? e->GetCost() : -1;
         // cout << " edge cost with parent: " << cost << endl;
-        int nextLayer = tmp->GetZ();
-        if (curLayer == nextLayer) ++length;
+        // int nextLayer = tmp->GetZ();
+        // if (curLayer == nextLayer) ++length;
     }
+    tmp->Set2GlobalNetRef(); // start
     // tmp->printCoordinates(); cout << endl;
-    cout << "length: " << length << endl;
+    // cout << "length: " << length << endl;
 }
 
 BBox Router::GetBoundingBox(Cell*& c1, Cell*& c2) {
@@ -145,9 +192,4 @@ BBox Router::GetBoundingBox(Cell*& c1, Cell*& c2) {
     if (ly > uy) ::swap(ly, uy);
 
     return BBox(Coordinate(lx, ly, 0), Coordinate(ux, uy, 0));
-}
-
-bool Router::check_wire_and_correct(Wire& wire) {
-    // TODO
-    return false;
 }

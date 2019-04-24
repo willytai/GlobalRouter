@@ -1,9 +1,6 @@
 #include "router.h"
 #include <limits>
 
-#define HORIZONTAL 0
-#define VIRTICAL   1
-
 void Router::dijkstra(Cell* start, Cell* goal) {
     BBox box = this->GetBoundingBox(start, goal);
     minHeap<float, Cell*> minQ;
@@ -32,7 +29,7 @@ void Router::dijkstra(Cell* start, Cell* goal) {
     }
 
     // backtrack from goal
-    // TODO Decrease the capacities along the used edges!
+    // Decrease the capacities along the used edges!
     this->backtrack(start, goal);
 }
 

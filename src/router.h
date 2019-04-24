@@ -8,6 +8,12 @@
 #include <cassert>
 #include <queue>
 
+#define HORIZONTAL 0
+#define VIRTICAL   1
+#define VIA        2
+
+extern RoutingDB db;
+
 using namespace std;
 
 struct Cell;
@@ -64,6 +70,18 @@ struct Wire
         _end.SetX(x);
         _end.SetY(y);
         _end.SetZ(z);
+    }
+
+    friend ostream& operator << (ostream& os, const Wire& w) {
+        int TileWidth = db.GetTileWidth();
+        int TileHeight = db.GetTileHeight();
+        os << "(" << TileWidth  * w.GetStart().GetX() + TileWidth  / 2;
+        os << ',' << TileHeight * w.GetStart().GetY() + TileHeight / 2;
+        os << ',' << w.GetStart().GetZ()+1 << ")-";
+        os << "(" << TileWidth  * w.GetEnd().GetX() + TileWidth  / 2;
+        os << ',' << TileHeight * w.GetEnd().GetY() + TileHeight / 2;
+        os << ','<< w.GetEnd().GetZ()+1   << ")";
+        return os;
     }
 
     Coordinate _start;
@@ -190,7 +208,7 @@ public:
     void relax(Cell*, const float&, minHeap<float, Cell*>&, const BBox&);
     void relax(Cell*, Cell*, const float&, minHeap<float, Cell*>&);
     void backtrack(Cell*, Cell*);
-    bool check_wire_and_correct(Wire&);
+    void collect_wires();
     inline bool check_coordinate(const int& x, const int& y) { return (x >= 0 && x < _width && y >= 0 && y < _height); }
     inline bool check_coordinate(const int& x, const int& y, const BBox& box) {
         return (x >= box.GetLowerLeftX() && x <= box.GetUpperRightX() && 
