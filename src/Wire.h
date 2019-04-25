@@ -31,11 +31,11 @@ struct Wire
     friend ostream& operator << (ostream& os, const Wire& w) {
         int TileWidth = db.GetTileWidth();
         int TileHeight = db.GetTileHeight();
-        os << "(" << TileWidth  * w.GetStart().GetX() + TileWidth  / 2;
-        os << ',' << TileHeight * w.GetStart().GetY() + TileHeight / 2;
+        os << "(" << TileWidth  * w.GetStart().GetX() + TileWidth  / 2 + db.GetLowerLeftX();
+        os << ',' << TileHeight * w.GetStart().GetY() + TileHeight / 2 + db.GetLowerLeftY();
         os << ',' << w.GetStart().GetZ()+1 << ")-";
-        os << "(" << TileWidth  * w.GetEnd().GetX() + TileWidth  / 2;
-        os << ',' << TileHeight * w.GetEnd().GetY() + TileHeight / 2;
+        os << "(" << TileWidth  * w.GetEnd().GetX() + TileWidth  / 2 + db.GetLowerLeftX();
+        os << ',' << TileHeight * w.GetEnd().GetY() + TileHeight / 2 + db.GetLowerLeftY();
         os << ','<< w.GetEnd().GetZ()+1   << ")";
         return os;
     }
