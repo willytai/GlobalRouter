@@ -62,7 +62,7 @@ void Router::create_edge(const int& c1x, const int& c1y, const int& c2x, const i
 void Router::route() {
     for (int i = 0; i < db.GetNetNo(); ++i) {
         Net& n = db.GetNetByPosition(i);
-        cout << "\t> routing Net " << n.GetName() << ' ' << i+1 << '/' << db.GetNetNo() << endl << endl;
+        cout << "\t> routing Net " << n.GetName() << ' ' << i+1 << '/' << db.GetNetNo() << endl;
         Cell::SetGlobalNetRef(n.GetUid());
         _wires.clear();
         for (int j = 0; j < n.GetSubNetNo(); ++j) {
@@ -87,8 +87,8 @@ void Router::route_subnet(SubNet& subnet) {
     short tz = subnet.GetTargetPinLayer()-1;
     Coordinate goal(tx, ty, tz);
     Coordinate start(sx, sy, sz);
-    cout << "[starting    point] "; start.print(); cout << endl;
-    cout << "[destination point] "; goal.print(); cout << endl;
+    // cout << "[starting    point] "; start.print(); cout << endl;
+    // cout << "[destination point] "; goal.print(); cout << endl;
     this->dijkstra(this->GetCellByCoordinate(start), this->GetCellByCoordinate(goal));
 }
 
@@ -142,7 +142,7 @@ void Router::collect_wires() {
 }
 
 void Router::backtrack(Cell* start, Cell* goal) {
-    cout << "[Backtracking]" << endl << endl;
+    // cout << "[Backtracking]" << endl << endl;
     // int length = 0;
     Cell* tmp = goal;
     while (tmp != start) {
