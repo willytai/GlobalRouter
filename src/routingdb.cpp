@@ -120,6 +120,7 @@ void RoutingDB::AddCapapcityAdjust(short gx1, short gy1, short layer1,
 {
     capacity_adjustV.push_back(CapacityAdjust(gx1, gy1, layer1, 
 		gx2, gy2, layer2, reduce_capacity));
+	if (reduce_capacity > capacity_max) capacity_max = reduce_capacity;
 }
 
 void RoutingDB::AddSubNet(Net& n, Pin& source_pin, Pin& target_pin)

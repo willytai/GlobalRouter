@@ -7,6 +7,8 @@
 
 extern RoutingDB db;
 
+int Cell::_global_net_ref = -1;
+
 void Router::RUN() {
     this->CreateLayout();
     this->route();
@@ -46,12 +48,10 @@ void Router::CreateLayout() {
         Edge* e = _layout[layer][c1x][c1y]->get_edge(_layout[layer][c2x][c2y]);
         assert(e && "Edge not found");
         e->SetCapacity(ca.GetReduceCapacity());
-        // cout << "changing edge between " << '(' << c1x << ' ' << c1y << ") (" << c2x << ' ' << c2y << ") on layer " << layer << " to " << e->GetCapacity() << endl;;
     }
 }
 
 void Router::create_edge(const int& c1x, const int& c1y, const int& c2x, const int& c2y, const int& cap, const int& layer) {
-    // cout << "creating edge between " << '(' << c1x << ' ' << c1y << ") (" << c2x << ' ' << c2y << ')' << " layer: " << layer+1 << endl;
     Cell*& C1 = _layout[layer][c1x][c1y];
     Cell*& C2 = _layout[layer][c2x][c2y];
     Edge* e = new Edge(cap, C1, C2);
@@ -77,8 +77,6 @@ void Router::route() {
         _outfile << '!' << endl;
     }
 }
-
-int Cell::_global_net_ref = -1;
 
 void Router::route_subnet(SubNet& subnet) {
     short sx = subnet.GetSourcePinGx();
@@ -171,7 +169,7 @@ void Router::backtrack(Cell* start, Cell* goal) {
 
         prev->Set2GlobalNetRef();
 
-        // float cost = e ? e->GetCost() : -1;
+        // CostType cost = e ? e->GetCost() : -1;
         // cout << " edge cost with parent: " << cost << endl;
         // int nextLayer = tmp->GetZ();
         // if (curLayer == nextLayer) ++length;

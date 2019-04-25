@@ -104,6 +104,8 @@ int main(int argc, char** argv)
     { cout << db.GetLayerViaSpacing(i) << " "; }
     cout << endl;
 
+    cout << "..maximun capacity: " << db.GetMaxCapacity() << endl;
+
     cout << "..chip lower left x: " << db.GetLowerLeftX() << endl; 
     cout << "..chip lower left y: " << db.GetLowerLeftY() << endl; 
     cout << "..global tile width: " << db.GetTileWidth() << endl; 

@@ -63,7 +63,7 @@ public:
     }
 
     void fix_up(int id) {
-        if (id < 1) return;
+        if (id <= 1) return;
         int parent_id = id / 2;
         if (_data[parent_id].first > _data[id].first) {
             _data[parent_id].second->SetHeapID(id);

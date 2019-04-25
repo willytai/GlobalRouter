@@ -8,6 +8,7 @@
 #include <string>
 #include <map>
 #include <set>
+#include "Cell.h"
 
 using namespace std;
 
@@ -16,7 +17,6 @@ class Net;
 class Pin;
 class RoutingDB;
 class SubNet;
-
 
 class Net
 {
@@ -184,13 +184,13 @@ public:
 	void AddCapapcityAdjust(short gx1, short gy1, short layer1,
 		short gx2, short gy2, short layer2, short value);
 	void AddSubNet(Net& n, Pin& s_pin, Pin& t_pin);
-	void AddHoriCapacity(short v)        { hori_capacityV.push_back(v); }
+	void AddHoriCapacity(short v)        { hori_capacityV.push_back(v); if (v > capacity_max) capacity_max = v; }
 	void AddMinSpacing(short v)          { min_spacingV.push_back(v); }
 	void AddMinWidth(short v)            { min_widthV.push_back(v); }
 	void AddNet(string n, int id)        { netV.push_back(Net(n, id)); }
 	void AddNetUidPositionMap(int uid, int pos);
 	void AddPin(short gx, short gy, short layer); 
-	void AddVertiCapacity(short v)       { verti_capacityV.push_back(v); }
+	void AddVertiCapacity(short v)       { verti_capacityV.push_back(v); if (v > capacity_max) capacity_max = v; }
 	void AddViaSpacing(short v)          { via_spacingV.push_back(v); }
 	int CalCenterX(short gx);
 	int CalCenterY(short gy);
@@ -201,6 +201,8 @@ public:
     // access functions
 	CapacityAdjust& GetCapacityAdjust(int id);
 	int GetCapacityAdjustNo()            { return capacity_adjustV.size(); }
+	int GetMaxCapacity()                 { return capacity_max; }
+	CostType GetCost(const Edge* e)      { return capacity_max - e->GetCapacity(); }
 	int GetChipHeight();
 	int GetChipWidth();
 	SubNet& GetSubNet(int id)            { return subnetV[id]; }
@@ -249,6 +251,7 @@ private:
 	int global_tile_height;
 	int lower_left_x;
 	int lower_left_y;
+	int capacity_max;
 
     // the keys are layer id
 	vector <short> verti_capacityV;
