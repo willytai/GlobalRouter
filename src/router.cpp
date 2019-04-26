@@ -139,44 +139,35 @@ void Router::collect_wires() {
             start = end = NULL;
         }
     }
+
+    // VIA
+    for (int x = 0; x < _width; ++x) {
+        for (int y = 0; y < _height; ++y) {
+            if (_layout[HORIZONTAL][x][y]->isGlobalNetRef() && _layout[VIRTICAL][x][y]->isGlobalNetRef()) {
+                _wires.push_back(Wire(_layout[HORIZONTAL][x][y]->GetCoordinate(), _layout[VIRTICAL][x][y]->GetCoordinate()));
+            }
+        }
+    }
 }
 
 void Router::backtrack(Cell* start, Cell* goal) {
     // cout << "[Backtracking]" << endl << endl;
-    // int length = 0;
     Cell* tmp = goal;
-    while (tmp != start) {
-        /*
-        start->printCoordinates();
-        cout << ' ';
-        goal->printCoordinates();
-        cout << ' ';
-        tmp->printCoordinates(); cout << endl;
-        */
-        // int curLayer = tmp->GetZ();
+    while (true) {
+        // tmp->printCoordinates(); cout << endl;
 
-        Cell* prev = tmp;
-        tmp = tmp->GetParent();
-        assert(tmp && "destination is not connected to source!");
-        Edge* e = tmp->get_edge(prev);
-        if (e) {
-            e->DecreaseCapacity();
-        }
-        else { // via, colllect them here
-            if (tmp->isGlobalNetRef() && prev->isGlobalNetRef()) {}
-            else _wires.push_back(Wire(tmp->GetCoordinate(), prev->GetCoordinate()));
+        tmp->Set2GlobalNetRef();
+        Cell* next = tmp->GetParent();
+        if (!next) {
+            assert(tmp == start);
+            break;
         }
 
-        prev->Set2GlobalNetRef();
+        Edge* e = tmp->get_edge(next);
+        if (e) e->DecreaseCapacity();
 
-        // CostType cost = e ? e->GetCost() : -1;
-        // cout << " edge cost with parent: " << cost << endl;
-        // int nextLayer = tmp->GetZ();
-        // if (curLayer == nextLayer) ++length;
+        tmp = next;
     }
-    tmp->Set2GlobalNetRef(); // start
-    // tmp->printCoordinates(); cout << endl;
-    // cout << "length: " << length << endl;
 }
 
 BBox Router::GetBoundingBox(Cell*& c1, Cell*& c2) {
