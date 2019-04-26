@@ -87,8 +87,6 @@ void Router::route_subnet(SubNet& subnet) {
     short tz = subnet.GetTargetPinLayer()-1;
     Coordinate goal(tx, ty, tz);
     Coordinate start(sx, sy, sz);
-    // cout << "[starting    point] "; start.print(); cout << endl;
-    // cout << "[destination point] "; goal.print(); cout << endl;
     this->dijkstra(this->GetCellByCoordinate(start), this->GetCellByCoordinate(goal));
 }
 
@@ -151,11 +149,8 @@ void Router::collect_wires() {
 }
 
 void Router::backtrack(Cell* start, Cell* goal) {
-    // cout << "[Backtracking]" << endl << endl;
     Cell* tmp = goal;
     while (true) {
-        // tmp->printCoordinates(); cout << endl;
-
         tmp->Set2GlobalNetRef();
         Cell* next = tmp->GetParent();
         if (!next) {
@@ -171,7 +166,6 @@ void Router::backtrack(Cell* start, Cell* goal) {
 }
 
 BBox Router::GetBoundingBox(Cell*& c1, Cell*& c2) {
-    // return BBox(Coordinate(0, 0, 0), Coordinate(_width-1, _height-1, 0));
     short lx = c1->GetX();
     short ux = c2->GetX();
     if (lx > ux) ::swap(lx, ux);

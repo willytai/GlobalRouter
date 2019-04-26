@@ -44,17 +44,6 @@ void HandleArgument(const int argc, char** argv)
 
     arg_no++;
 
-    /* output file */
-    /*
-    outputFile.open(argv[arg_no], ios::out);
-    if (!outputFile)
-    {
-    cerr << "Could not open output file: " << argv[arg_no] << endl;
-    exit(1);
-    }
-
-    arg_no++;
-    */
 }
 
 
@@ -112,31 +101,9 @@ int main(int argc, char** argv)
     cout << "..global tile height: " << db.GetTileHeight() << endl; 
 
     cout << "..# of capacity adjustment: " << db.GetCapacityAdjustNo() << endl;
-/*
-    for (int i = 0; i < db.GetCapacityAdjustNo(); i++) {
-        CapacityAdjust& ca = db.GetCapacityAdjust(i);
-        cout << "...." << ca.GetGx1() << " " << ca.GetGy1() << " " << ca.GetLayer1() 
-        << " " << ca.GetGx2() << " " << ca.GetGy2() << " " << ca.GetLayer2() 
-        << " " << ca.GetReduceCapacity() << endl;
-    }
-    cout << endl;
-*/
 
     cout << "..# of net: " << db.GetNetNo() << endl;
-/*
-    for (int i = 0; i < db.GetNetNo(); i++) {
-        Net& n = db.GetNetByPosition(i);
 
-        cout << "..net[" << n.GetUid() << "] " << n.GetName() << endl;
-        cout << "...# of pin: " << n.GetPinNo() << endl;
-        for (int i = 0; i < n.GetPinNo(); i++) {
-            Pin& p = n.GetPin(i);
-            cout << "...."; 
-            p.ShowInfo();
-        }
-    }
-    cout << endl;
-*/
     usg.report(1, 1);
     /* =================================== */
 
@@ -147,23 +114,6 @@ int main(int argc, char** argv)
     usg.report(1, 1);
     cout << endl;
 
-    /* =================================== */
-    /* Show net(subnet) information after net decomposition */
-    /*
-    cout << "Net/SubNet Info: " << endl;
-
-    for (int i = 0; i < db.GetNetNo(); i++) {
-        Net& n = db.GetNetByPosition(i);
-        cout << "..net[" << n.GetUid() << "] " << n.GetName() << endl;
-        cout << "...# of subnets: " << n.GetSubNetNo() << endl;
-        for (int i = 0; i < n.GetSubNetNo(); i++) {
-            SubNet& e = n.GetSubNet(i);
-            cout << "...."; 
-            e.ShowInfo();
-        }
-        cout << endl;
-    }
-    */
     /* =================================== */
     cout << "[Router]" << endl << endl;
     Router router;
@@ -183,7 +133,3 @@ int main(int argc, char** argv)
 
     return 0;
 }
-
-
-
-

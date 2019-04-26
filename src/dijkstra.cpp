@@ -63,42 +63,12 @@ void Router::relax(Cell* src, Cell* c, const CostType& curCost, minHeap<CostType
     }
     else {
         EdgeCost = db.GetCost(e);
-        /*
-        cout << "edge cost/capacity between ";
-        src->printCoordinates();
-        cout << ' ';
-        c->printCoordinates();
-        cout << " is " << EdgeCost << '/' << e->GetCapacity();
-        cout << endl;
-        */
         assert(EdgeCost >= 0);
     }
 
     // decrease key
     // store a heap_id in Cell to make this O(lgn)
     if (heap.DecreaseKey(c->GetHeapID(), EdgeCost+curCost)) {
-        // assert(!(src->InHeap()));
         c->SetParent(src);
-        /*
-        cout << "setting ";
-        c->printCoordinates();
-        cout << "'s parent to ";
-        src->printCoordinates();
-        cout << " heapid: " << c->GetHeapID() << ", " << src->GetHeapID();
-        cout << endl;
-        */
-        // assert(src->GetParent() != c);
-    }
-    else {
-        /*
-        cout << "distance from ";
-        c->printCoordinates();
-        cout << "to ";
-        src->printCoordinates();
-        cout << " did not decrease.";
-        cout << endl;
-        */
     }
 }
-
-
