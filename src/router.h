@@ -39,7 +39,6 @@ struct BBox
     }
 
     void grow(const Coordinate& c) {
-        if (_ll == _ur && !(_ur == c)) { _ll = _ur = c; return; }
         short lx = c.GetX() < _ll.GetX() ? c.GetX() : _ll.GetX();
         short ux = c.GetX() > _ur.GetX() ? c.GetX() : _ur.GetX();
         short ly = c.GetY() < _ll.GetY() ? c.GetY() : _ll.GetY();

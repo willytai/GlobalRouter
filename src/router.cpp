@@ -65,7 +65,11 @@ void Router::route() {
         if (i % 100 == 99) cout << "\t> " << i+1 << '/' << db.GetNetNo() << " routed." << endl;
         Cell::SetGlobalNetRef(n.GetUid());
         _wires.clear();
-        BBox P_bbox;
+        short sx = n.GetSubNet(0).GetSourcePinGx();
+        short sy = n.GetSubNet(0).GetSourcePinGy();
+        short sz = n.GetSubNet(0).GetSourcePinLayer()-1;
+        Coordinate s(sx, sy, sz);
+        BBox P_bbox(s, s);
         for (int j = 0; j < n.GetSubNetNo(); ++j) {
             this->route_subnet(n.GetSubNet(j), P_bbox);
         }
@@ -107,7 +111,7 @@ void Router::collect_wires(const BBox& P_bbox) {
             if (!(_layout[HORIZONTAL][x][y]->isGlobalNetRef()) && start) {
                 end = _layout[HORIZONTAL][x-1][y];
             }
-            else if (start && x == _width-1) {
+            else if (start && x == P_bbox.GetUpperRightX()) {
                 end = _layout[HORIZONTAL][x][y];
             }
             else continue;
@@ -130,7 +134,7 @@ void Router::collect_wires(const BBox& P_bbox) {
             if (!(_layout[VIRTICAL][x][y]->isGlobalNetRef()) && start) {
                 end = _layout[VIRTICAL][x][y-1];
             }
-            else if (start && y == _height-1) {
+            else if (start && y == P_bbox.GetUpperRightY()) {
                 end = _layout[VIRTICAL][x][y];
             }
             else continue;

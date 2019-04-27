@@ -122,6 +122,7 @@ int main(int argc, char** argv)
     usg.report(1, 1);
     /* =================================== */
 
+    /*
     cout << "[Verify]" << endl;
     char cmd[100];
 
@@ -130,6 +131,7 @@ int main(int argc, char** argv)
     cout << cmd << endl;
     system(cmd);
     cout << endl;
+    */
 
     return 0;
 }
