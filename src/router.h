@@ -48,11 +48,6 @@ struct BBox
         _ll.SetY(ly);
         _ur.SetX(ux);
         _ur.SetY(uy);
-
-        cout << "box: ";
-        _ll.print(); cout << ' ';
-        _ur.print();
-        cout << endl;
     }
 
     Coordinate _ll;
