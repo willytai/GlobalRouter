@@ -20,7 +20,7 @@ public:
     Node ExtractMin() const { return _data[1]; }
 
     bool DecreaseKey(int id, Key key) {
-        assert(_data[id].second->GetHeapID() == id);
+        // assert(_data[id].second->GetHeapID() == id);
         if (key > _data[id].first) return false;
         _data[id].first = key;
         this->fix_up(id);

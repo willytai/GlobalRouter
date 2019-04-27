@@ -52,7 +52,7 @@ void Router::relax(Cell* src, Cell* c, const CostType& curCost, minHeap<CostType
     if (!c) return;
     if (!(c->InHeap())) return; // not inside min heap
 
-    assert(curCost < numeric_limits<CostType>::max());
+    // assert(curCost < numeric_limits<CostType>::max());
     
     // find the edge
     Edge* e = src->get_edge(c);
@@ -63,7 +63,7 @@ void Router::relax(Cell* src, Cell* c, const CostType& curCost, minHeap<CostType
     }
     else {
         EdgeCost = db.GetCost(e);
-        assert(EdgeCost >= 0);
+        // assert(EdgeCost >= 0);
     }
 
     // decrease key

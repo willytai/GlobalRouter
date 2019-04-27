@@ -67,7 +67,7 @@ struct Cell
                 return;
             }
         }
-        assert(0 && "Number of edges in a single cell exceeded!");
+        // assert(0 && "Number of edges in a single cell exceeded!");
     }
     Edge* get_edge(const Cell* c2) const {
         for (int i = 0; i < 3; ++i) {
