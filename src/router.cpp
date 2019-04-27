@@ -46,7 +46,7 @@ void Router::CreateLayout() {
         int c2y = ca.GetGy2();
         short layer = ca.GetLayer1()-1;
         Edge* e = _layout[layer][c1x][c1y]->get_edge(_layout[layer][c2x][c2y]);
-        assert(e && "Edge not found");
+        // assert(e && "Edge not found");
         e->SetCapacity(ca.GetReduceCapacity());
     }
 }
@@ -157,7 +157,7 @@ void Router::backtrack(Cell* start, Cell* goal) {
         tmp->Set2GlobalNetRef();
         Cell* next = tmp->GetParent();
         if (!next) {
-            assert(tmp == start);
+            // assert(tmp == start);
             break;
         }
 
