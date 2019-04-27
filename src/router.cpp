@@ -62,13 +62,14 @@ void Router::create_edge(const int& c1x, const int& c1y, const int& c2x, const i
 void Router::route() {
     for (int i = 0; i < db.GetNetNo(); ++i) {
         Net& n = db.GetNetByPosition(i);
-        cout << "\t> routing Net " << n.GetName() << ' ' << i+1 << '/' << db.GetNetNo() << endl;
+        if (i % 100 == 99) cout << "\t> " << i+1 << '/' << db.GetNetNo() << " routed." << endl;
         Cell::SetGlobalNetRef(n.GetUid());
         _wires.clear();
+        BBox P_bbox;
         for (int j = 0; j < n.GetSubNetNo(); ++j) {
-            this->route_subnet(n.GetSubNet(j));
+            this->route_subnet(n.GetSubNet(j), P_bbox);
         }
-        this->collect_wires();
+        this->collect_wires(P_bbox);
 
         // dump to file
         _outfile << n.GetName() << ' ' << n.GetUid() << ' ' <<  _wires.size() << endl;
@@ -78,7 +79,7 @@ void Router::route() {
     }
 }
 
-void Router::route_subnet(SubNet& subnet) {
+void Router::route_subnet(SubNet& subnet, BBox& P_bbox) {
     short sx = subnet.GetSourcePinGx();
     short sy = subnet.GetSourcePinGy();
     short sz = subnet.GetSourcePinLayer()-1;
@@ -87,16 +88,18 @@ void Router::route_subnet(SubNet& subnet) {
     short tz = subnet.GetTargetPinLayer()-1;
     Coordinate goal(tx, ty, tz);
     Coordinate start(sx, sy, sz);
+    if (!P_bbox.contain(goal))  P_bbox.grow(goal);
+    if (!P_bbox.contain(start)) P_bbox.grow(start);
     this->dijkstra(this->GetCellByCoordinate(start), this->GetCellByCoordinate(goal));
 }
 
-void Router::collect_wires() {
+void Router::collect_wires(const BBox& P_bbox) {
 
     // HORIZONTAL layer
-    for (int y = 0; y < _height; ++y) {
+    for (int y = P_bbox.GetLowerLeftY(); y <= P_bbox.GetUpperRightY(); ++y) {
         Cell* start = NULL;
         Cell* end   = NULL;
-        for (int x = 0; x < _width; ++x) {
+        for (int x = P_bbox.GetLowerLeftX(); x <= P_bbox.GetUpperRightX(); ++x) {
             if (_layout[HORIZONTAL][x][y]->isGlobalNetRef() && !start) {
                 start = _layout[HORIZONTAL][x][y];
                 continue;
@@ -116,10 +119,10 @@ void Router::collect_wires() {
     }
 
     // VIRTICAL layer
-    for (int x = 0; x < _width; ++x) {
+    for (int x = P_bbox.GetLowerLeftX(); x <= P_bbox.GetUpperRightX(); ++x) {
         Cell* start = NULL;
         Cell* end   = NULL;
-        for (int y = 0; y < _height; ++y) {
+        for (int y = P_bbox.GetLowerLeftY(); y <= P_bbox.GetUpperRightY(); ++y) {
             if (_layout[VIRTICAL][x][y]->isGlobalNetRef() && !start) {
                 start = _layout[VIRTICAL][x][y];
                 continue;
@@ -139,8 +142,8 @@ void Router::collect_wires() {
     }
 
     // VIA
-    for (int x = 0; x < _width; ++x) {
-        for (int y = 0; y < _height; ++y) {
+    for (int x = P_bbox.GetLowerLeftX(); x <= P_bbox.GetUpperRightX(); ++x) {
+        for (int y = P_bbox.GetLowerLeftY(); y <= P_bbox.GetUpperRightY(); ++y) {
             if (_layout[HORIZONTAL][x][y]->isGlobalNetRef() && _layout[VIRTICAL][x][y]->isGlobalNetRef()) {
                 _wires.push_back(Wire(_layout[HORIZONTAL][x][y]->GetCoordinate(), _layout[VIRTICAL][x][y]->GetCoordinate()));
             }

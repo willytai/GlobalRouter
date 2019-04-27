@@ -18,6 +18,7 @@ using namespace std;
 
 struct BBox
 {
+    BBox() {}
     BBox(Coordinate ll, Coordinate ur) { _ll = ll; _ur = ur; }
     ~BBox() {}
 
@@ -31,6 +32,28 @@ struct BBox
     short GetUpperRightY() const { return _ur.GetY(); }
 
     int GetSize() const { return (_ur.GetX() - _ll.GetX()) * (_ur.GetY() - _ll.GetY()); }
+
+    bool contain(const Coordinate& c) const {
+        return (_ll.GetX() <= c.GetX() && c.GetX() <= _ur.GetX() &&
+                _ll.GetY() <= c.GetY() && c.GetY() <= _ur.GetY()); 
+    }
+
+    void grow(const Coordinate& c) {
+        if (_ll == _ur && !(_ur == c)) { _ll = _ur = c; return; }
+        short lx = c.GetX() < _ll.GetX() ? c.GetX() : _ll.GetX();
+        short ux = c.GetX() > _ur.GetX() ? c.GetX() : _ur.GetX();
+        short ly = c.GetY() < _ll.GetY() ? c.GetY() : _ll.GetY();
+        short uy = c.GetY() > _ur.GetY() ? c.GetY() : _ur.GetY();
+        _ll.SetX(lx);
+        _ll.SetY(ly);
+        _ur.SetX(ux);
+        _ur.SetY(uy);
+
+        cout << "box: ";
+        _ll.print(); cout << ' ';
+        _ur.print();
+        cout << endl;
+    }
 
     Coordinate _ll;
     Coordinate _ur;
@@ -48,12 +71,12 @@ public:
     void route();
 
     void create_edge(const int&, const int&, const int&, const int&, const int&, const int&);
-    void route_subnet(SubNet&);
+    void route_subnet(SubNet&, BBox&);
     void dijkstra(Cell*, Cell*);
     void relax(Cell*, const CostType&, minHeap<CostType, Cell*>&, const BBox&);
     void relax(Cell*, Cell*, const CostType&, minHeap<CostType, Cell*>&);
     void backtrack(Cell*, Cell*);
-    void collect_wires();
+    void collect_wires(const BBox&);
     inline bool check_coordinate(const int& x, const int& y) { return (x >= 0 && x < _width && y >= 0 && y < _height); }
     inline bool check_coordinate(const int& x, const int& y, const BBox& box) {
         return (x >= box.GetLowerLeftX() && x <= box.GetUpperRightX() && 
