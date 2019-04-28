@@ -59,7 +59,7 @@ void Router::relax(Cell* src, Cell* c, const CostType& curCost, minHeap<CostType
 
     CostType EdgeCost;
     if (!e) { // via
-        EdgeCost = 0;
+        EdgeCost = 1;
     }
     else {
         EdgeCost = db.GetCost(e);
